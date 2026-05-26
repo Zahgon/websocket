@@ -3,15 +3,17 @@
 package websocket
 
 func mask(b []byte, key uint32) uint32 {
+	_ = "STUB: not implemented"
 	// TODO: Will enable in v1.9.0.
-	return maskGo(b, key)
-	/*
-		if len(b) > 0 {
-			return maskAsm(&b[0], len(b), key)
-		}
-		return key
-	*/
+	return 0
 }
+
+/*
+	if len(b) > 0 {
+		return maskAsm(&b[0], len(b), key)
+	}
+	return key
+*/
 
 // @nhooyr: I am not confident that the amd64 or the arm64 implementations of this
 // function are perfect. There are almost certainly missing optimizations or

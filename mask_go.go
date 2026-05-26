@@ -2,6 +2,4 @@
 
 package websocket
 
-func mask(b []byte, key uint32) uint32 {
-	return maskGo(b, key)
-}
+func mask(b []byte, key uint32) uint32 { _ = "STUB: not implemented"; return 0 }

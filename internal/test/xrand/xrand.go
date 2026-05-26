@@ -1,53 +1,22 @@
 package xrand
 
-import (
-	"crypto/rand"
-	"encoding/base64"
-	"fmt"
-	"math/big"
-	"strings"
-)
-
 // Bytes generates random bytes with length n.
-func Bytes(n int) []byte {
-	b := make([]byte, n)
-	_, err := rand.Reader.Read(b)
-	if err != nil {
-		panic(fmt.Sprintf("failed to generate rand bytes: %v", err))
-	}
-	return b
-}
+func Bytes(n int) []byte { _ = "STUB: not implemented"; return nil }
 
 // String generates a random string with length n.
-func String(n int) string {
-	s := strings.ToValidUTF8(string(Bytes(n)), "_")
-	s = strings.ReplaceAll(s, "\x00", "_")
-	if len(s) > n {
-		return s[:n]
-	}
-	if len(s) < n {
-		// Pad with =
-		extra := n - len(s)
-		return s + strings.Repeat("=", extra)
-	}
-	return s
-}
+func String(n int) string { _ = "STUB: not implemented"; return "" }
+
+// Pad with =
 
 // Bool returns a randomly generated boolean.
 func Bool() bool {
-	return Int(2) == 1
+	_ = "STUB: not implemented"
+
+	// Int returns a randomly generated integer between [0, max).
+	return false
 }
 
-// Int returns a randomly generated integer between [0, max).
-func Int(max int) int {
-	x, err := rand.Int(rand.Reader, big.NewInt(int64(max)))
-	if err != nil {
-		panic(fmt.Sprintf("failed to get random int: %v", err))
-	}
-	return int(x.Int64())
-}
+func Int(max int) int { _ = "STUB: not implemented"; return 0 }
 
 // Base64 returns a randomly generated base64 string of length n.
-func Base64(n int) string {
-	return base64.StdEncoding.EncodeToString(Bytes(n))
-}
+func Base64(n int) string { _ = "STUB: not implemented"; return "" }

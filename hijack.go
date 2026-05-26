@@ -20,14 +20,6 @@ type rwUnwrapper interface {
 // this function is used to provide a consistent way to check for the
 // Hijacker interface across Go versions.
 func hijacker(rw http.ResponseWriter) (http.Hijacker, bool) {
-	for {
-		switch t := rw.(type) {
-		case http.Hijacker:
-			return t, true
-		case rwUnwrapper:
-			rw = t.Unwrap()
-		default:
-			return nil, false
-		}
-	}
+	_ = "STUB: not implemented"
+	return *new(http.Hijacker), false
 }

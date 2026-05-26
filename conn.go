@@ -5,11 +5,7 @@ package websocket
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"io"
-	"net"
-	"runtime"
-	"strconv"
 	"sync"
 	"sync/atomic"
 )
@@ -101,107 +97,34 @@ type connConfig struct {
 	bw *bufio.Writer
 }
 
-func newConn(cfg connConfig) *Conn {
-	c := &Conn{
-		subprotocol:    cfg.subprotocol,
-		rwc:            cfg.rwc,
-		client:         cfg.client,
-		copts:          cfg.copts,
-		flateThreshold: cfg.flateThreshold,
-
-		br: cfg.br,
-		bw: cfg.bw,
-
-		closed:         make(chan struct{}),
-		activePings:    make(map[string]chan<- struct{}),
-		onPingReceived: cfg.onPingReceived,
-		onPongReceived: cfg.onPongReceived,
-	}
-
-	c.readMu = newMu(c)
-	c.writeFrameMu = newMu(c)
-
-	c.msgReader = newMsgReader(c)
-
-	c.msgWriter = newMsgWriter(c)
-	if c.client {
-		c.writeBuf = extractBufioWriterBuf(c.bw, c.rwc)
-	}
-
-	if c.flate() && c.flateThreshold == 0 {
-		c.flateThreshold = 128
-		if !c.msgWriter.flateContextTakeover() {
-			c.flateThreshold = 512
-		}
-	}
-
-	runtime.SetFinalizer(c, func(c *Conn) {
-		c.close()
-	})
-
-	return c
-}
+func newConn(cfg connConfig) *Conn { _ = "STUB: not implemented"; return nil }
 
 // Subprotocol returns the negotiated subprotocol.
 // An empty string means the default protocol.
-func (c *Conn) Subprotocol() string {
-	return c.subprotocol
-}
+func (c *Conn) Subprotocol() string { _ = "STUB: not implemented"; return "" }
 
-func (c *Conn) close() error {
-	c.closeMu.Lock()
-	defer c.closeMu.Unlock()
+func (c *Conn) close() error { _ = "STUB: not implemented"; return nil }
 
-	if c.isClosed() {
-		return net.ErrClosed
-	}
-	runtime.SetFinalizer(c, nil)
-	close(c.closed)
+// Have to close after c.closed is closed to ensure any goroutine that wakes up
+// from the connection being closed also sees that c.closed is closed and returns
+// closeErr.
 
-	// Have to close after c.closed is closed to ensure any goroutine that wakes up
-	// from the connection being closed also sees that c.closed is closed and returns
-	// closeErr.
-	err := c.rwc.Close()
-	// With the close of rwc, these become safe to close.
-	c.msgWriter.close()
-	c.msgReader.close()
-	return err
-}
+// With the close of rwc, these become safe to close.
 
-func (c *Conn) setupWriteTimeout(ctx context.Context) {
-	stop := context.AfterFunc(ctx, func() {
-		c.clearWriteTimeout()
-		c.close()
-	})
-	swapTimeoutStop(&c.writeTimeoutStop, &stop)
-}
+func (c *Conn) setupWriteTimeout(ctx context.Context) { _ = "STUB: not implemented"; return }
 
-func (c *Conn) clearWriteTimeout() {
-	swapTimeoutStop(&c.writeTimeoutStop, nil)
-}
+func (c *Conn) clearWriteTimeout() { _ = "STUB: not implemented"; return }
 
-func (c *Conn) setupReadTimeout(ctx context.Context) {
-	stop := context.AfterFunc(ctx, func() {
-		c.clearReadTimeout()
-		c.close()
-	})
-	swapTimeoutStop(&c.readTimeoutStop, &stop)
-}
+func (c *Conn) setupReadTimeout(ctx context.Context) { _ = "STUB: not implemented"; return }
 
-func (c *Conn) clearReadTimeout() {
-	swapTimeoutStop(&c.readTimeoutStop, nil)
-}
+func (c *Conn) clearReadTimeout() { _ = "STUB: not implemented"; return }
 
 func swapTimeoutStop(p *atomic.Pointer[func() bool], newStop *func() bool) {
-	oldStop := p.Swap(newStop)
-	if oldStop != nil {
-		(*oldStop)()
-	}
+	_ = "STUB: not implemented"
+	return
 }
 
-func (c *Conn) flate() bool {
-	return c.copts != nil
-}
+func (c *Conn) flate() bool { _ = "STUB: not implemented"; return false }
 
 // Ping sends a ping to the peer and waits for a pong.
 // Use this to measure latency or ensure the peer is responsive.
@@ -210,97 +133,31 @@ func (c *Conn) flate() bool {
 // to read the pong.
 //
 // TCP Keepalives should suffice for most use cases.
-func (c *Conn) Ping(ctx context.Context) error {
-	p := c.pingCounter.Add(1)
+func (c *Conn) Ping(ctx context.Context) error { _ = "STUB: not implemented"; return nil }
 
-	err := c.ping(ctx, strconv.FormatInt(p, 10))
-	if err != nil {
-		return fmt.Errorf("failed to ping: %w", err)
-	}
-	return nil
-}
-
-func (c *Conn) ping(ctx context.Context, p string) error {
-	pong := make(chan struct{}, 1)
-
-	c.activePingsMu.Lock()
-	c.activePings[p] = pong
-	c.activePingsMu.Unlock()
-
-	defer func() {
-		c.activePingsMu.Lock()
-		delete(c.activePings, p)
-		c.activePingsMu.Unlock()
-	}()
-
-	err := c.writeControl(ctx, opPing, []byte(p))
-	if err != nil {
-		return err
-	}
-
-	select {
-	case <-c.closed:
-		return net.ErrClosed
-	case <-ctx.Done():
-		return fmt.Errorf("failed to wait for pong: %w", ctx.Err())
-	case <-pong:
-		return nil
-	}
-}
+func (c *Conn) ping(ctx context.Context, p string) error { _ = "STUB: not implemented"; return nil }
 
 type mu struct {
 	c  *Conn
 	ch chan struct{}
 }
 
-func newMu(c *Conn) *mu {
-	return &mu{
-		c:  c,
-		ch: make(chan struct{}, 1),
-	}
-}
+func newMu(c *Conn) *mu { _ = "STUB: not implemented"; return nil }
 
-func (m *mu) forceLock() {
-	m.ch <- struct{}{}
-}
+func (m *mu) forceLock() { _ = "STUB: not implemented"; return }
 
-func (m *mu) tryLock() bool {
-	select {
-	case m.ch <- struct{}{}:
-		return true
-	default:
-		return false
-	}
-}
+func (m *mu) tryLock() bool { _ = "STUB: not implemented"; return false }
 
-func (m *mu) lock(ctx context.Context) error {
-	select {
-	case <-m.c.closed:
-		return net.ErrClosed
-	case <-ctx.Done():
-		return fmt.Errorf("failed to acquire lock: %w", ctx.Err())
-	case m.ch <- struct{}{}:
-		// To make sure the connection is certainly alive.
-		// As it's possible the send on m.ch was selected
-		// over the receive on closed.
-		select {
-		case <-m.c.closed:
-			// Make sure to release.
-			m.unlock()
-			return net.ErrClosed
-		default:
-		}
-		return nil
-	}
-}
+func (m *mu) lock(ctx context.Context) error { _ = "STUB: not implemented"; return nil }
 
-func (m *mu) unlock() {
-	select {
-	case <-m.ch:
-	default:
-	}
-}
+// To make sure the connection is certainly alive.
+// As it's possible the send on m.ch was selected
+// over the receive on closed.
+
+// Make sure to release.
+
+func (m *mu) unlock() { _ = "STUB: not implemented"; return }
 
 type noCopy struct{}
 
-func (*noCopy) Lock() {}
+func (*noCopy) Lock() { _ = "STUB: not implemented"; return }

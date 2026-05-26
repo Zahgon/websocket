@@ -4,12 +4,12 @@ package util
 type WriterFunc func(p []byte) (int, error)
 
 func (f WriterFunc) Write(p []byte) (int, error) {
-	return f(p)
+	_ = "STUB: not implemented"
+
+	// ReaderFunc is used to implement one off io.Readers.
+	return 0, nil
 }
 
-// ReaderFunc is used to implement one off io.Readers.
 type ReaderFunc func(p []byte) (int, error)
 
-func (f ReaderFunc) Read(p []byte) (int, error) {
-	return f(p)
-}
+func (f ReaderFunc) Read(p []byte) (int, error) { _ = "STUB: not implemented"; return 0, nil }

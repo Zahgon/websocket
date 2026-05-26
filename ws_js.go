@@ -4,18 +4,13 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"io"
-	"net"
 	"net/http"
-	"reflect"
 	"runtime"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"syscall/js"
 
-	"github.com/coder/websocket/internal/bpool"
 	"github.com/coder/websocket/internal/wsjs"
 )
 
@@ -66,18 +61,7 @@ type Conn struct {
 	readBuf    []wsjs.MessageEvent
 }
 
-func (c *Conn) close(err error, wasClean bool) {
-	c.closeOnce.Do(func() {
-		runtime.SetFinalizer(c, nil)
-
-		if !wasClean {
-			err = fmt.Errorf("unclean connection close: %w", err)
-		}
-		c.setCloseErr(err)
-		c.closeWasClean = wasClean
-		close(c.closed)
-	})
-}
+func (c *Conn) close(err error, wasClean bool) { _ = "STUB: not implemented"; return }
 
 func (c *Conn) init() {
 	c.closed = make(chan struct{})
@@ -124,158 +108,67 @@ func (c *Conn) init() {
 	})
 }
 
-func (c *Conn) closeWithInternal() {
-	c.Close(StatusInternalError, "something went wrong")
-}
+func (c *Conn) closeWithInternal() { _ = "STUB: not implemented"; return }
 
 // Read attempts to read a message from the connection.
 // The maximum time spent waiting is bounded by the context.
 func (c *Conn) Read(ctx context.Context) (MessageType, []byte, error) {
-	c.closeReadMu.Lock()
-	closedRead := c.closeReadCtx != nil
-	c.closeReadMu.Unlock()
-	if closedRead {
-		return 0, nil, errors.New("WebSocket connection read closed")
-	}
-
-	typ, p, err := c.read(ctx)
-	if err != nil {
-		return 0, nil, fmt.Errorf("failed to read: %w", err)
-	}
-	readLimit := c.msgReadLimit.Load()
-	if readLimit >= 0 && int64(len(p)) > readLimit {
-		reason := fmt.Errorf("read limited at %d bytes", c.msgReadLimit.Load())
-		c.Close(StatusMessageTooBig, reason.Error())
-		return 0, nil, fmt.Errorf("%w: %v", ErrMessageTooBig, reason)
-	}
-	return typ, p, nil
+	_ = "STUB: not implemented"
+	return *new(MessageType), nil, nil
 }
 
 func (c *Conn) read(ctx context.Context) (MessageType, []byte, error) {
-	select {
-	case <-ctx.Done():
-		c.Close(StatusPolicyViolation, "read timed out")
-		return 0, nil, ctx.Err()
-	case <-c.readSignal:
-	case <-c.closed:
-		return 0, nil, net.ErrClosed
-	}
-
-	c.readBufMu.Lock()
-	defer c.readBufMu.Unlock()
-
-	me := c.readBuf[0]
-	// We copy the messages forward and decrease the size
-	// of the slice to avoid reallocating.
-	copy(c.readBuf, c.readBuf[1:])
-	c.readBuf = c.readBuf[:len(c.readBuf)-1]
-
-	if len(c.readBuf) > 0 {
-		// Next time we read, we'll grab the message.
-		select {
-		case c.readSignal <- struct{}{}:
-		default:
-		}
-	}
-
-	switch p := me.Data.(type) {
-	case string:
-		return MessageText, []byte(p), nil
-	case []byte:
-		return MessageBinary, p, nil
-	default:
-		panic("websocket: unexpected data type from wsjs OnMessage: " + reflect.TypeOf(me.Data).String())
-	}
+	_ = "STUB: not implemented"
+	return *new(MessageType), nil, nil
 }
+
+// We copy the messages forward and decrease the size
+// of the slice to avoid reallocating.
+
+// Next time we read, we'll grab the message.
 
 // Ping is mocked out for Wasm.
 func (c *Conn) Ping(ctx context.Context) error {
+	_ = "STUB: not implemented"
+
+	// Write writes a message of the given type to the connection.
+	// Always non blocking.
 	return nil
 }
 
-// Write writes a message of the given type to the connection.
-// Always non blocking.
 func (c *Conn) Write(ctx context.Context, typ MessageType, p []byte) error {
-	err := c.write(typ, p)
-	if err != nil {
-		// Have to ensure the WebSocket is closed after a write error
-		// to match the Go API. It can only error if the message type
-		// is unexpected or the passed bytes contain invalid UTF-8 for
-		// MessageText.
-		err := fmt.Errorf("failed to write: %w", err)
-		c.setCloseErr(err)
-		c.closeWithInternal()
-		return err
-	}
+	_ = "STUB: not implemented"
 	return nil
 }
 
-func (c *Conn) write(typ MessageType, p []byte) error {
-	if c.isClosed() {
-		return net.ErrClosed
-	}
-	switch typ {
-	case MessageBinary:
-		return c.ws.SendBytes(p)
-	case MessageText:
-		return c.ws.SendText(string(p))
-	default:
-		return fmt.Errorf("unexpected message type: %v", typ)
-	}
-}
+// Have to ensure the WebSocket is closed after a write error
+// to match the Go API. It can only error if the message type
+// is unexpected or the passed bytes contain invalid UTF-8 for
+// MessageText.
+
+func (c *Conn) write(typ MessageType, p []byte) error { _ = "STUB: not implemented"; return nil }
 
 // Close closes the WebSocket with the given code and reason.
 // It will wait until the peer responds with a close frame
 // or the connection is closed.
 // It thus performs the full WebSocket close handshake.
-func (c *Conn) Close(code StatusCode, reason string) error {
-	err := c.exportedClose(code, reason)
-	if err != nil {
-		return fmt.Errorf("failed to close WebSocket: %w", err)
-	}
-	return nil
-}
+func (c *Conn) Close(code StatusCode, reason string) error { _ = "STUB: not implemented"; return nil }
 
 // CloseNow closes the WebSocket connection without attempting a close handshake.
 // Use when you do not want the overhead of the close handshake.
 //
 // note: No different from Close(StatusGoingAway, "") in WASM as there is no way to close
 // a WebSocket without the close handshake.
-func (c *Conn) CloseNow() error {
-	return c.Close(StatusGoingAway, "")
-}
+func (c *Conn) CloseNow() error { _ = "STUB: not implemented"; return nil }
 
 func (c *Conn) exportedClose(code StatusCode, reason string) error {
-	c.closingMu.Lock()
-	defer c.closingMu.Unlock()
-
-	if c.isClosed() {
-		return net.ErrClosed
-	}
-
-	ce := fmt.Errorf("sent close: %w", CloseError{
-		Code:   code,
-		Reason: reason,
-	})
-
-	c.setCloseErr(ce)
-	err := c.ws.Close(int(code), reason)
-	if err != nil {
-		return err
-	}
-
-	<-c.closed
-	if !c.closeWasClean {
-		return c.closeErr
-	}
+	_ = "STUB: not implemented"
 	return nil
 }
 
 // Subprotocol returns the negotiated subprotocol.
 // An empty string means the default protocol.
-func (c *Conn) Subprotocol() string {
-	return c.ws.Subprotocol()
-}
+func (c *Conn) Subprotocol() string { _ = "STUB: not implemented"; return "" }
 
 // DialOptions represents the options available to pass to Dial.
 type DialOptions struct {
@@ -288,70 +181,28 @@ type DialOptions struct {
 // The returned *http.Response is always nil or a mock. It's only in the signature
 // to match the core API.
 func Dial(ctx context.Context, url string, opts *DialOptions) (*Conn, *http.Response, error) {
-	c, resp, err := dial(ctx, url, opts)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to WebSocket dial %q: %w", url, err)
-	}
-	return c, resp, nil
+	_ = "STUB: not implemented"
+	return nil, nil, nil
 }
 
 func dial(ctx context.Context, url string, opts *DialOptions) (*Conn, *http.Response, error) {
-	if opts == nil {
-		opts = &DialOptions{}
-	}
-
-	url = strings.Replace(url, "http://", "ws://", 1)
-	url = strings.Replace(url, "https://", "wss://", 1)
-
-	ws, err := wsjs.New(url, opts.Subprotocols)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	c := &Conn{
-		ws: ws,
-	}
-	c.init()
-
-	opench := make(chan struct{})
-	releaseOpen := ws.OnOpen(func(e js.Value) {
-		close(opench)
-	})
-	defer releaseOpen()
-
-	select {
-	case <-ctx.Done():
-		c.Close(StatusPolicyViolation, "dial timed out")
-		return nil, nil, ctx.Err()
-	case <-opench:
-		return c, &http.Response{
-			StatusCode: http.StatusSwitchingProtocols,
-		}, nil
-	case <-c.closed:
-		return nil, nil, net.ErrClosed
-	}
+	_ = "STUB: not implemented"
+	return nil, nil, nil
 }
 
 // Reader attempts to read a message from the connection.
 // The maximum time spent waiting is bounded by the context.
 func (c *Conn) Reader(ctx context.Context) (MessageType, io.Reader, error) {
-	typ, p, err := c.Read(ctx)
-	if err != nil {
-		return 0, nil, err
-	}
-	return typ, bytes.NewReader(p), nil
+	_ = "STUB: not implemented"
+	return *new(MessageType), *new(io.Reader), nil
 }
 
 // Writer returns a writer to write a WebSocket data message to the connection.
 // It buffers the entire message in memory and then sends it when the writer
 // is closed.
 func (c *Conn) Writer(ctx context.Context, typ MessageType) (io.WriteCloser, error) {
-	return &writer{
-		c:   c,
-		ctx: ctx,
-		typ: typ,
-		b:   bpool.Get(),
-	}, nil
+	_ = "STUB: not implemented"
+	return *new(io.WriteCloser), nil
 }
 
 type writer struct {
@@ -364,73 +215,22 @@ type writer struct {
 	b *bytes.Buffer
 }
 
-func (w *writer) Write(p []byte) (int, error) {
-	if w.closed {
-		return 0, errors.New("cannot write to closed writer")
-	}
-	n, err := w.b.Write(p)
-	if err != nil {
-		return n, fmt.Errorf("failed to write message: %w", err)
-	}
-	return n, nil
-}
+func (w *writer) Write(p []byte) (int, error) { _ = "STUB: not implemented"; return 0, nil }
 
-func (w *writer) Close() error {
-	if w.closed {
-		return errors.New("cannot close closed writer")
-	}
-	w.closed = true
-	defer bpool.Put(w.b)
-
-	err := w.c.Write(w.ctx, w.typ, w.b.Bytes())
-	if err != nil {
-		return fmt.Errorf("failed to close writer: %w", err)
-	}
-	return nil
-}
+func (w *writer) Close() error { _ = "STUB: not implemented"; return nil }
 
 // CloseRead implements *Conn.CloseRead for wasm.
 func (c *Conn) CloseRead(ctx context.Context) context.Context {
-	c.closeReadMu.Lock()
-	ctx2 := c.closeReadCtx
-	if ctx2 != nil {
-		c.closeReadMu.Unlock()
-		return ctx2
-	}
-	ctx, cancel := context.WithCancel(ctx)
-	c.closeReadCtx = ctx
-	c.closeReadMu.Unlock()
-
-	go func() {
-		defer cancel()
-		defer c.CloseNow()
-		_, _, err := c.read(ctx)
-		if err != nil {
-			c.Close(StatusPolicyViolation, "unexpected data message")
-		}
-	}()
-	return ctx
+	_ = "STUB: not implemented"
+	return *new(context.Context)
 }
 
 // SetReadLimit implements *Conn.SetReadLimit for wasm.
-func (c *Conn) SetReadLimit(n int64) {
-	c.msgReadLimit.Store(n)
-}
+func (c *Conn) SetReadLimit(n int64) { _ = "STUB: not implemented"; return }
 
-func (c *Conn) setCloseErr(err error) {
-	c.closeErrOnce.Do(func() {
-		c.closeErr = fmt.Errorf("WebSocket closed: %w", err)
-	})
-}
+func (c *Conn) setCloseErr(err error) { _ = "STUB: not implemented"; return }
 
-func (c *Conn) isClosed() bool {
-	select {
-	case <-c.closed:
-		return true
-	default:
-		return false
-	}
-}
+func (c *Conn) isClosed() bool { _ = "STUB: not implemented"; return false }
 
 // AcceptOptions represents Accept's options.
 type AcceptOptions struct {
@@ -443,7 +243,8 @@ type AcceptOptions struct {
 
 // Accept is stubbed out for Wasm.
 func Accept(w http.ResponseWriter, r *http.Request, opts *AcceptOptions) (*Conn, error) {
-	return nil, errors.New("unimplemented")
+	_ = "STUB: not implemented"
+	return nil, nil
 }
 
 // StatusCode represents a WebSocket status code.
@@ -500,21 +301,13 @@ type CloseError struct {
 	Reason string
 }
 
-func (ce CloseError) Error() string {
-	return fmt.Sprintf("status = %v and reason = %q", ce.Code, ce.Reason)
-}
+func (ce CloseError) Error() string { _ = "STUB: not implemented"; return "" }
 
 // CloseStatus is a convenience wrapper around Go 1.13's errors.As to grab
 // the status code from a CloseError.
 //
 // -1 will be returned if the passed error is nil or not a CloseError.
-func CloseStatus(err error) StatusCode {
-	var ce CloseError
-	if errors.As(err, &ce) {
-		return ce.Code
-	}
-	return -1
-}
+func CloseStatus(err error) StatusCode { _ = "STUB: not implemented"; return *new(StatusCode) }
 
 // CompressionMode represents the modes available to the deflate extension.
 // See https://tools.ietf.org/html/rfc7692
@@ -566,33 +359,14 @@ type mu struct {
 	ch chan struct{}
 }
 
-func newMu(c *Conn) *mu {
-	return &mu{
-		c:  c,
-		ch: make(chan struct{}, 1),
-	}
-}
+func newMu(c *Conn) *mu { _ = "STUB: not implemented"; return nil }
 
-func (m *mu) forceLock() {
-	m.ch <- struct{}{}
-}
+func (m *mu) forceLock() { _ = "STUB: not implemented"; return }
 
-func (m *mu) tryLock() bool {
-	select {
-	case m.ch <- struct{}{}:
-		return true
-	default:
-		return false
-	}
-}
+func (m *mu) tryLock() bool { _ = "STUB: not implemented"; return false }
 
-func (m *mu) unlock() {
-	select {
-	case <-m.ch:
-	default:
-	}
-}
+func (m *mu) unlock() { _ = "STUB: not implemented"; return }
 
 type noCopy struct{}
 
-func (*noCopy) Lock() {}
+func (*noCopy) Lock() { _ = "STUB: not implemented"; return }

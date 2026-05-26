@@ -1,55 +1,20 @@
 package assert
 
 import (
-	"errors"
-	"fmt"
-	"reflect"
-	"strings"
 	"testing"
 )
 
 // Equal asserts exp == act.
-func Equal(t testing.TB, name string, exp, got any) {
-	t.Helper()
-
-	if !reflect.DeepEqual(exp, got) {
-		t.Fatalf("unexpected %v: expected %#v but got %#v", name, exp, got)
-	}
-}
+func Equal(t testing.TB, name string, exp, got any) { _ = "STUB: not implemented"; return }
 
 // Success asserts err == nil.
-func Success(t testing.TB, err error) {
-	t.Helper()
-
-	if err != nil {
-		t.Fatal(err)
-	}
-}
+func Success(t testing.TB, err error) { _ = "STUB: not implemented"; return }
 
 // Error asserts err != nil.
-func Error(t testing.TB, err error) {
-	t.Helper()
-
-	if err == nil {
-		t.Fatal("expected error")
-	}
-}
+func Error(t testing.TB, err error) { _ = "STUB: not implemented"; return }
 
 // Contains asserts the fmt.Sprint(v) contains sub.
-func Contains(t testing.TB, v any, sub string) {
-	t.Helper()
-
-	s := fmt.Sprint(v)
-	if !strings.Contains(s, sub) {
-		t.Fatalf("expected %q to contain %q", s, sub)
-	}
-}
+func Contains(t testing.TB, v any, sub string) { _ = "STUB: not implemented"; return }
 
 // ErrorIs asserts errors.Is(got, exp)
-func ErrorIs(t testing.TB, exp, got error) {
-	t.Helper()
-
-	if !errors.Is(got, exp) {
-		t.Fatalf("expected %v but got %v", exp, got)
-	}
-}
+func ErrorIs(t testing.TB, exp, got error) { _ = "STUB: not implemented"; return }

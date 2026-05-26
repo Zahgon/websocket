@@ -4,7 +4,6 @@ package wstest
 
 import (
 	"bufio"
-	"context"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -15,23 +14,8 @@ import (
 // Pipe is used to create an in memory connection
 // between two websockets analogous to net.Pipe.
 func Pipe(dialOpts *websocket.DialOptions, acceptOpts *websocket.AcceptOptions) (clientConn, serverConn *websocket.Conn) {
-	tt := fakeTransport{
-		h: func(w http.ResponseWriter, r *http.Request) {
-			serverConn, _ = websocket.Accept(w, r, acceptOpts)
-		},
-	}
-
-	if dialOpts == nil {
-		dialOpts = &websocket.DialOptions{}
-	}
-	_dialOpts := *dialOpts
-	dialOpts = &_dialOpts
-	dialOpts.HTTPClient = &http.Client{
-		Transport: tt,
-	}
-
-	clientConn, _, _ = websocket.Dial(context.Background(), "ws://example.com", dialOpts)
-	return clientConn, serverConn
+	_ = "STUB: not implemented"
+	return nil, nil
 }
 
 type fakeTransport struct {
@@ -39,20 +23,8 @@ type fakeTransport struct {
 }
 
 func (t fakeTransport) RoundTrip(r *http.Request) (*http.Response, error) {
-	clientConn, serverConn := net.Pipe()
-
-	hj := testHijacker{
-		ResponseRecorder: httptest.NewRecorder(),
-		serverConn:       serverConn,
-	}
-
-	t.h.ServeHTTP(hj, r)
-
-	resp := hj.ResponseRecorder.Result()
-	if resp.StatusCode == http.StatusSwitchingProtocols {
-		resp.Body = clientConn
-	}
-	return resp, nil
+	_ = "STUB: not implemented"
+	return nil, nil
 }
 
 type testHijacker struct {
@@ -63,5 +35,6 @@ type testHijacker struct {
 var _ http.Hijacker = testHijacker{}
 
 func (hj testHijacker) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	return hj.serverConn, bufio.NewReadWriter(bufio.NewReader(hj.serverConn), bufio.NewWriter(hj.serverConn)), nil
+	_ = "STUB: not implemented"
+	return *new(net.Conn), nil, nil
 }
